@@ -5,7 +5,9 @@ package nosql
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"net/url"
+	"os"
 	"path"
 	"runtime/pprof"
 	"strconv"
@@ -252,6 +254,30 @@ func getRedisTLSOptions(uri *url.URL) *tls.Config {
 		if err == nil {
 			tlsConfig.InsecureSkipVerify = insecureskipverify
 		}
+	}
+
+	clientCert := uri.Query().Get("tlscert")
+	clientKey := uri.Query().Get("tlskey")
+
+	if len(clientCert) > 0 && len(clientKey) > 0 {
+		// Load the keypair.
+		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+		if err != nil {
+			log.Fatal("Error loading client certificate and/or key.")
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	caCertPath := uri.Query().Get("cacert")
+
+	if len(caCertPath) > 0 {
+		caCert, err := os.ReadFile(caCertPath)
+		if err != nil {
+			log.Fatal("Error loading CA certificate.")
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		tlsConfig.RootCAs = caCertPool
 	}
 
 	return tlsConfig

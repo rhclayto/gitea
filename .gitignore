@@ -124,3 +124,6 @@ prime/
 
 # A Makefile for custom make targets
 Makefile.local
+
+# asdf
+.tool-versions
